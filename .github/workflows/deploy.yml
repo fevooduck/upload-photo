@@ -1,0 +1,34 @@
+# Nome do seu workflow
+name: Deploy to Digital Ocean
+
+# Gatilho: Rodar este workflow sempre que houver um push na branch 'main'
+on:
+  push:
+    branches:
+      - main
+
+# Tarefas a serem executadas
+jobs:
+  deploy:
+    # Usar uma máquina virtual Linux fresca para rodar os comandos
+    runs-on: ubuntu-latest
+
+    # Passos do deploy
+    steps:
+      # Passo 1: Fazer o checkout do seu código (necessário para o runner ter acesso aos arquivos)
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Passo 2: Conectar ao seu Droplet e rodar o script de deploy
+      - name: Deploy to Droplet
+        uses: appleboy/ssh-action@master # Ação popular e segura para SSH
+        with:
+          host: ${{ secrets.DO_HOST }}         # IP do seu Droplet
+          username: ${{ secrets.DO_USERNAME }}   # Seu usuário no Droplet (ex: 'seu_usuario')
+          key: ${{ secrets.DO_SSH_KEY }}        # Sua chave privada SSH
+          script: |
+            # Comandos a serem executados no seu Droplet
+            cd /var/www/photo-upload
+            git pull origin main
+            docker compose up --build -d
+            docker image prune -f # Opcional: Limpa imagens Docker antigas para economizar espaço

@@ -116,13 +116,13 @@ export default function Uploader() {
             <Toaster position="top-center" richColors />
             <Card className="w-full max-w-md">
                 <CardHeader>
-                    <CardTitle>Enviar Fotos para o Evento</CardTitle>
+                    <CardTitle>Fotos Chá Revelação Gui & Má</CardTitle>
                     <CardDescription>Escolha suas melhores fotos e compartilhe conosco!</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Seu Nome</Label>
-                        <Input id="name" type="text" placeholder="João da Silva" value={name} onChange={(e) => setName(e.target.value)} disabled={isUploading} />
+                        <Label htmlFor="name">Nome</Label>
+                        <Input id="name" type="text" placeholder="Seu nome" value={name} onChange={(e) => setName(e.target.value)} disabled={isUploading} />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="picture">Fotos</Label>
@@ -140,7 +140,6 @@ export default function Uploader() {
                                     {(item.status === 'uploading' || item.status === 'success') && (
                                         <Progress value={item.progress} className="w-full mt-1" />
                                     )}
-                                    {item.status === 'success' && <a href={item.url} target="_blank" className="text-xs text-blue-500 hover:underline">Ver foto</a>}
                                 </div>
                             ))}
                         </div>
