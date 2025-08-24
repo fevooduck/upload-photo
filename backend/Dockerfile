@@ -1,6 +1,6 @@
 # --- Estágio 1: Build ---
 # Usa uma imagem Node.js completa para instalar dependências
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /usr/src/app
 
 # Copia os arquivos de dependência e instala tudo (incluindo devDependencies)
@@ -12,7 +12,7 @@ COPY . .
 
 # --- Estágio 2: Produção ---
 # Começa de uma imagem limpa e leve
-FROM node:18-alpine
+FROM node:22-alpine
 WORKDIR /usr/src/app
 
 # Copia os arquivos de dependência novamente
