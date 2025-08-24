@@ -38,7 +38,12 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 15 * 1024 * 1024 // Limite de 15MB por arquivo
+    }
+});
 
 // Rota principal da API
 app.get('/api', (req, res) => {
