@@ -8,9 +8,11 @@ const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
 const slugify = require('slugify'); // <-- NOVO: Importa o slugify
+const sharp = require('sharp');
 
 // Configurações
 const PORT = process.env.PORT || 4000;
+const BASE_URL = process.env.APP_URL || `http://localhost:${PORT}`;
 const UPLOADS_FOLDER = 'uploads/';
 
 // Garante que a pasta de uploads principal exista
@@ -52,38 +54,80 @@ app.get('/api', (req, res) => {
 
 // Rota de Upload - MODIFICADA PARA MÚLTIPLOS ARQUIVOS
 // 'photos' é o nome do campo, e 10 é o número máximo de arquivos por requisição
-app.post('/api/upload', upload.array('photos', 10), (req, res) => {
+app.post('/api/upload', upload.array('photos', 10), async (req, res) => { // <-- 2. Torne a função async
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ error: 'Nenhum arquivo foi enviado.' });
     }
+    
+    try {
+        const name = req.body.name || 'geral';
+        const preSanitizedName = name.replace(/&/g, '-');
+        const folderName = slugify(preSanitizedName, { lower: true, strict: true, replacement: '-', trim: true });
+        const userFolderPath = path.join(UPLOADS_FOLDER, folderName);
+        const thumbnailsFolderPath = path.join(userFolderPath, 'thumbnails'); // <-- 3. Defina a pasta de thumbnails
 
-    // Agora, req.body.name está garantido que existe.
-    const name = req.body.name || 'geral';
-    const preSanitizedName = name.replace(/&/g, '-');
-    const folderName = slugify(preSanitizedName, { lower: true, strict: true, replacement: '-', trim: true });
-    const userFolderPath = path.join(UPLOADS_FOLDER, folderName);
+        fs.mkdirSync(thumbnailsFolderPath, { recursive: true });
 
-    // Cria a pasta do usuário se ela não existir
-    fs.mkdirSync(userFolderPath, { recursive: true });
+        // 4. Use Promise.all para processar todas as imagens em paralelo
+        const filesDataPromises = req.files.map(async (file) => {
+            const oldPath = file.path;
+            const newPath = path.join(userFolderPath, file.filename);
+            const thumbnailPath = path.join(thumbnailsFolderPath, file.filename);
 
-    // Mapeia os arquivos e os move para a pasta correta
-    const filesData = req.files.map(file => {
-        const oldPath = file.path; // Caminho temporário (ex: uploads/photo-123.jpg)
-        const newPath = path.join(userFolderPath, file.filename); // Caminho final (ex: uploads/joao-silva/photo-123.jpg)
+            fs.renameSync(oldPath, newPath);
 
-        // Move o arquivo
-        fs.renameSync(oldPath, newPath);
+            // --- CRIAÇÃO DA THUMBNAIL ---
+            await sharp(newPath)
+                .resize({ width: 400 }) // Redimensiona para 400px de largura, mantendo o aspect ratio
+                .toFile(thumbnailPath);
 
-        return {
-            filename: file.filename,
-            url: `http://localhost:${PORT}/uploads/${folderName}/${file.filename}`
-        };
-    });
+            return {
+                filename: file.filename,
+                originalUrl: `${BASE_URL}/uploads/${folderName}/${file.filename}`,
+                thumbnailUrl: `${BASE_URL}/uploads/${folderName}/thumbnails/${file.filename}`,
+            };
+        });
 
-    res.status(200).json({
-        message: 'Upload realizado com sucesso!',
-        files: filesData
-    });
+        const filesData = await Promise.all(filesDataPromises);
+
+        res.status(200).json({
+            message: 'Upload realizado com sucesso!',
+            files: filesData
+        });
+    } catch (error) {
+        console.error("Erro no processamento de upload:", error);
+        res.status(500).json({ error: 'Ocorreu um erro ao processar os arquivos.' });
+    }
+});
+
+app.get('/api/images', (req, res) => {
+    try {
+        const allImages = [];
+        // Lê todas as pastas de usuário na pasta 'uploads'
+        const userRoutes = fs.readdirSync(UPLOADS_FOLDER, { withFileTypes: true })
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+
+        for (const userFolder of userRoutes) {
+            const userFolderPath = path.join(UPLOADS_FOLDER, userFolder);
+            // Lê todos os arquivos na pasta do usuário (ignorando a pasta de thumbnails)
+            const imageFiles = fs.readdirSync(userFolderPath)
+                .filter(file => file !== 'thumbnails');
+
+            for (const imageFile of imageFiles) {
+                // Monta o objeto de dados para cada imagem
+                allImages.push({
+                    user: userFolder,
+                    originalUrl: `${BASE_URL}/uploads/${userFolder}/${imageFile}`,
+                    thumbnailUrl: `${BASE_URL}/uploads/${userFolder}/thumbnails/${imageFile}`,
+                });
+            }
+        }
+        res.status(200).json(allImages);
+    } catch (error) {
+        console.error("Erro ao listar imagens:", error);
+        res.status(500).json({ error: 'Não foi possível listar as imagens.' });
+    }
 });
 
 const server = process.env.NODE_ENV !== 'test'
