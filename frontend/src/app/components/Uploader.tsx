@@ -74,7 +74,8 @@ export default function Uploader() {
         formData.append('name', name);
 
         try {
-            const response = await axios.post('http://localhost:4000/api/upload', formData, {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''; // Adiciona um fallback
+            const response = await axios.post(`${apiUrl}/api/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
                     if (progressEvent.total) {
