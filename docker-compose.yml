@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: photo_upload_backend
+    restart: unless-stopped
+    volumes:
+      # No servidor, isso irá mapear uma pasta no host para persistir os uploads.
+      # O caminho antes de ':' é relativo ao local do docker-compose.yml
+      - ./uploads:/usr/src/app/uploads
+    environment:
+      - NODE_ENV=production
+      # Importante: Define a porta que o backend escuta DENTRO do container
+      - PORT=4000
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: photo_upload_frontend
+    restart: unless-stopped
+    environment:
+      # O frontend precisa saber como encontrar a API.
+      # 'backend' é o nome do serviço definido acima. Docker gerencia a rede.
+      - NEXT_PUBLIC_API_URL=http://backend:4000
+    depends_on:
+      - backend
+
+# Esta seção é para conectar nossos contêineres à rede do Nginx NO SERVIDOR.
+networks:
+  default:
+    external:
+      name: nginx_network
