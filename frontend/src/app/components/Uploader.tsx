@@ -56,7 +56,9 @@ export default function Uploader() {
                 await uploadFile(uploadableFile);
             }
         }
-        toast.info("Todos os uploads foram concluídos.");
+        toast.info("Todos os uploads foram concluídos. Pronto para um novo envio!");
+
+        setQueue([]); 
     };
 
     const uploadFile = async (uploadableFile: UploadableFile) => {
