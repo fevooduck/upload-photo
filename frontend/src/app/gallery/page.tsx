@@ -1,8 +1,6 @@
 // src/app/gallery/page.tsx
 
 import ImageGallery from "../components/ImageGallery";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 // Define o tipo de dados que esperamos da API
 type ImageData = {
@@ -37,9 +35,6 @@ export default async function GalleryPage() {
     <main className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Galeria de Fotos do Evento</h1>
-        <Button asChild>
-          <Link href="/">Enviar mais fotos</Link>
-        </Button>
       </div>
       {images.length > 0 ? (
         <ImageGallery images={images} />
